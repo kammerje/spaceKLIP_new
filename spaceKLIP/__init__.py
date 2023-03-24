@@ -8,5 +8,6 @@ from . import imagetools
 from . import mast
 from . import pyklippipeline
 from . import utils
+from . import plotting
 
 from ._version import *
