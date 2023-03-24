@@ -11,6 +11,7 @@ matplotlib.rcParams.update({'font.size': 14})
 import os
 import pdb
 import sys
+import functools
 
 import astropy.io.fits as pyfits
 import matplotlib.pyplot as plt
@@ -97,3 +98,30 @@ def read_red(fitsfile):
         raise UserWarning('Requires 2D/3D data cube')
     
     return data, head_pri, head_sci, is2d
+
+
+@functools.lru_cache()
+def lookup_pixscale(instrument, detector):
+    """Retrieve the pixel scale of a given high contrast mode from the SIAF.
+    Used in importing files into the database.
+
+    Approximations: We ignore the slight departures from ideal square pixels and just
+    return the X scale. We also ignore the slight wavelength dependence of the pixel scale.
+
+    Alternatively we could read pixel scales in from FITS WCS headers, with much the same result.
+
+    """
+
+    import pysiaf
+    siaf = pysiaf.Siaf(instrument)
+
+    if detector.upper() == 'NRCALONG':
+        return siaf.apertures['NRCA5_MASK430R'].XSciScale
+    elif detector.upper() == 'NRCA2':
+        return siaf.apertures['NRCA2_MASK210R'].XSciScale
+    elif detector.upper() == 'NRCA4':
+        return siaf.apertures['NRCA4_MASKSWB'].XSciScale
+    elif detector.upper() == 'NIRISS':
+        return siaf.apertures['NIS_AMI1'].XSciScale
+    else:
+        return siaf.apertures['MIRIM_MASK1065'].XSciScale

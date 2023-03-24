@@ -27,6 +27,7 @@ import logging
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
+from . import utils
 
 # =============================================================================
 # MAIN
@@ -195,20 +196,7 @@ class Database():
             YOFFSET += [1e3 * head.get('YOFFSET', 0.)]
             APERNAME += [head.get('APERNAME', 'UNKNOWN')]
             if TELESCOP[-1] == 'JWST':
-                if INSTRUME[-1] == 'NIRCAM':
-                    nircam = webbpsf.NIRCam()
-                    if 'LONG' in DETECTOR[-1] or '5' in DETECTOR[-1]:
-                        PIXSCALE += [nircam._pixelscale_long * 1e3]
-                    else:
-                        PIXSCALE += [nircam._pixelscale_short * 1e3]
-                elif INSTRUME[-1] == 'NIRISS':
-                    niriss = webbpsf.NIRISS()
-                    PIXSCALE += [niriss.pixelscale * 1e3]
-                elif INSTRUME[-1] == 'MIRI':
-                    miri = webbpsf.MIRI()
-                    PIXSCALE += [miri.pixelscale * 1e3]
-                else:
-                    raise UserWarning('Data originates from unknown JWST instrument')
+                PIXSCALE += [utils.lookup_pixscale(INSTRUME[-1], DETECTOR[-1]) * 1e3]
             else:
                 raise UserWarning('Data originates from unknown telescope')
             head = hdul['SCI'].header
@@ -552,20 +540,7 @@ class Database():
             SUBARRAY += [head.get('SUBARRAY', 'UNKNOWN')]
             APERNAME += [head.get('APERNAME', 'UNKNOWN')]
             if TELESCOP[-1] == 'JWST':
-                if INSTRUME[-1] == 'NIRCAM':
-                    nircam = webbpsf.NIRCam()
-                    if 'LONG' in DETECTOR[-1] or '5' in DETECTOR[-1]:
-                        PIXSCALE += [nircam._pixelscale_long * 1e3]
-                    else:
-                        PIXSCALE += [nircam._pixelscale_short * 1e3]
-                elif INSTRUME[-1] == 'NIRISS':
-                    niriss = webbpsf.NIRISS()
-                    PIXSCALE += [niriss.pixelscale * 1e3]
-                elif INSTRUME[-1] == 'MIRI':
-                    miri = webbpsf.MIRI()
-                    PIXSCALE += [miri.pixelscale * 1e3]
-                else:
-                    raise UserWarning('Data originates from unknown JWST instrument')
+                PIXSCALE += [utils.lookup_pixscale(INSTRUME[-1], DETECTOR[-1]) * 1e3]
             else:
                 raise UserWarning('Data originates from unknown telescope')
             if TYPE[-1] == 'CORON3':
@@ -803,3 +778,30 @@ class Database():
         hdul.close()
         
         pass
+
+    def summarize(self):
+        """Succinctly summarize the contents of a database
+
+        How many files are present at each level of reduction, and what kind (sci, ref, TA), etc
+        """
+
+        def short_concat_name(concat_name):
+            """Return a shorter, less redundant name for a coronagraphic mode, useful for display"""
+            parts = concat_name.split('_')
+            return "_".join([parts[1], parts[3], parts[5], ])
+
+        for mode in self.obs:
+            print(short_concat_name(mode))
+
+            tab = self.obs[mode]
+
+            for stage in [0, 1, 2, 3]:
+                stagetab = tab[tab['DATAMODL'] == f'STAGE{stage}']
+                if len(stagetab):
+                    nsci = np.sum(stagetab['TYPE'] == 'SCI')
+                    npsf = np.sum(stagetab['TYPE'] == 'REF')
+                    nta = np.sum((stagetab['TYPE'] == 'SCI_TA') | (stagetab['TYPE'] == 'REF_TA'))
+
+                    summarystr = f"\tSTAGE{stage}: {len(stagetab)} files.\t{nsci} SCI, {npsf} PSF"
+                    if nta: summarystr += f", {nta} TA"
+                    print(summarystr)
