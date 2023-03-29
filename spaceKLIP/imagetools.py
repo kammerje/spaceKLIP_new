@@ -52,7 +52,19 @@ class ImageTools():
                       frame=None,
                       types=['SCI', 'SCI_BG', 'REF', 'REF_BG'],
                       subdir='removed'):
-        
+        """ Remove the first frame due to reset switch charge delay. Only required
+               for MIRI.
+
+        Parameters
+        ----------
+        index
+        frame
+        types
+        subdir
+
+        Returns None, but writes out new files to subdir and updates database.
+        """
+
         # Check input.
         if isinstance(index, int):
             index = [index]
@@ -104,6 +116,17 @@ class ImageTools():
                     npix=1,
                     types=['SCI', 'SCI_BG', 'REF', 'REF_BG'],
                     subdir='cropped'):
+        """ Crop frames
+
+        Parameters
+        ----------
+        npix
+        types
+        subdir
+
+        Returns None, but writes out new files to subdir and updates database.
+
+        """
         
         # Check input.
         if isinstance(npix, int):
@@ -159,6 +182,21 @@ class ImageTools():
                    cval=np.nan,
                    types=['SCI', 'SCI_BG', 'REF', 'REF_BG'],
                    subdir='padded'):
+        """ Pad frames with additional pixels around the border
+
+        Parameters
+        ----------
+        npix : int, or iterable of 4 ints
+            number of additional pixels to add per side. If scalar, same number of rows/columns will be added to
+            all 4 sides. Alternatively provide an iterable to set [left, right, top, bottom] independently
+        cval : float
+            Constant value to write to the padded pixels
+        types
+        subdir
+
+        Returns None, but writes out new files to subdir and updates database.
+
+        """
         
         # Check input.
         if isinstance(npix, int):
@@ -213,6 +251,17 @@ class ImageTools():
                      nframes=None,
                      types=['SCI', 'SCI_BG', 'REF', 'REF_BG'],
                      subdir='coadded'):
+        """ Coadd frames
+
+        Parameters
+        ----------
+        nframes
+        types
+        subdir
+
+        Returns None, but writes out new files to subdir and updates database.
+
+        """
         
         # Set output directory.
         output_dir = os.path.join(self.database.output_dir, subdir)
@@ -273,6 +322,11 @@ class ImageTools():
     def subtract_median(self,
                         types=['SCI', 'SCI_TA', 'SCI_BG', 'REF', 'REF_TA', 'REF_BG'],
                         subdir='medsub'):
+        """ Median-subtract each frame to mitigate uncalibrated bias drifts.
+        Generally only required for NIRCam.
+
+        Returns None, but writes out new files to subdir and updates database.
+        """
         
         # Set output directory.
         output_dir = os.path.join(self.database.output_dir, subdir)
@@ -314,6 +368,17 @@ class ImageTools():
     
     def subtract_background(self,
                             subdir='bgsub'):
+        """ Perform a background subtraction to remove the MIRI glowstick.
+
+        Only required for MIRI.
+        Parameters
+        ----------
+        subdir : str
+            Output subdirectory
+
+        Returns None, but writes out new files and updates database
+
+        """
         
         # Set output directory.
         output_dir = os.path.join(self.database.output_dir, subdir)
@@ -463,7 +528,33 @@ class ImageTools():
                        medfilt_kwargs={},
                        types=['SCI', 'SCI_TA', 'SCI_BG', 'REF', 'REF_TA', 'REF_BG'],
                        subdir='bpcleaned'):
-        
+        """Fix bad pixels using custom spaceKLIP routines.
+
+        Multiple routines can be  combined in a custom order by joining them with a + sign.
+        - bpclean: use sigma clipping to find additional bad pixels.
+        - custom: use custom map to find additional bad pixels.
+        - timemed: replace pixels which are only bad in some frames with their
+                   median value from the good frames.
+        - dqmed:   replace bad pixels with the median of surrounding good
+                   pixels.
+        - medfilt: replace bad pixels with an image plane median filter.
+
+
+        Parameters
+        ----------
+        method : str
+        bpclean_kwargs : dict
+        custom_kwargs : dict
+        timemed_kwargs : dict
+        dqmed_kwargs : dict
+        medfilt_kwargs : dict
+        types : list of str
+        subdir : str
+
+        Returns None, but writes out new files to the specified subdirectory, and updates the database object.
+
+        """
+
         # Set output directory.
         output_dir = os.path.join(self.database.output_dir, subdir)
         if not os.path.exists(output_dir):
@@ -529,6 +620,21 @@ class ImageTools():
                                 pxdq,
                                 NON_SCIENCE,
                                 bpclean_kwargs={}):
+        """Implements the 'bpclean' method for find_bad_pixels.
+
+
+        Parameters
+        ----------
+        data
+        erro
+        pxdq
+        NON_SCIENCE
+        bpclean_kwargs
+
+        Returns
+        -------
+
+        """
         
         # Check input.
         if 'sigclip' not in bpclean_kwargs.keys():
@@ -618,6 +724,20 @@ class ImageTools():
                                pxdq,
                                key,
                                custom_kwargs={}):
+        """Implements a custom method for find_bad_pixels
+
+        Parameters
+        ----------
+        data
+        erro
+        pxdq
+        key
+        custom_kwargs
+
+        Returns
+        -------
+
+        """
         
         # Find bad pixels using median of neighbors.
         pxdq_orig = pxdq.copy()
@@ -633,6 +753,19 @@ class ImageTools():
                                erro,
                                pxdq,
                                timemed_kwargs={}):
+        """Implements the timemed method for find_bad_pixels
+
+        Parameters
+        ----------
+        data
+        erro
+        pxdq
+        timemed_kwargs
+
+        Returns
+        -------
+
+        """
         
         # Fix bad pixels using time median.
         ww = pxdq != 0
@@ -652,6 +785,20 @@ class ImageTools():
                              erro,
                              pxdq,
                              dqmed_kwargs={}):
+        """ Implements the dqmed method for find_bad_pixels
+
+        Parameters
+        ----------
+        data
+        erro
+        pxdq
+        dqmed_kwargs
+
+        Returns
+        -------
+
+        """
+
         
         # Check input.
         if 'shift_x' not in dqmed_kwargs.keys():
@@ -713,6 +860,19 @@ class ImageTools():
                                erro,
                                pxdq,
                                medfilt_kwargs={}):
+        """Implements the medfilt method for find_bad_pixels
+
+        Parameters
+        ----------
+        data
+        erro
+        pxdq
+        medfilt_kwargs
+
+        Returns
+        -------
+
+        """
         
         # Check input.
         if 'size' not in medfilt_kwargs.keys():
@@ -736,6 +896,21 @@ class ImageTools():
                      cval=0.,
                      types=['SCI', 'SCI_BG', 'REF', 'REF_BG'],
                      subdir='nanreplaced'):
+        """Replace NaN pixels with a constant value.
+
+
+        Parameters
+        ----------
+        cval : float
+            Constant value to write in place of each NaN
+        types : list of str
+        subdir : str
+            Output subdirectory
+
+        Returns None, but writes out new files to subdir and updates database.
+
+
+        """
         
         # Set output directory.
         output_dir = os.path.join(self.database.output_dir, subdir)
@@ -776,6 +951,19 @@ class ImageTools():
                      method='fourier',
                      kwargs={},
                      subdir='aligned'):
+        """ Use image registration to align all frames in a concatenation to the
+        first science frame in that concatenation.
+
+
+        Parameters
+        ----------
+        method
+        kwargs
+        subdir
+
+        Returns None, but writes out new files to subdir and updates database.
+
+        """
         
         # Set output directory.
         output_dir = os.path.join(self.database.output_dir, subdir)
@@ -927,6 +1115,17 @@ class ImageTools():
                         method='fourier',
                         kwargs={},
                         subdir='recentered'):
+        """
+
+        Parameters
+        ----------
+        method
+        kwargs
+        subdir
+
+        Returns None, but writes out new files to subdir and updates database.
+
+        """
         
         # Set output directory.
         output_dir = os.path.join(self.database.output_dir, subdir)
@@ -1004,6 +1203,21 @@ class ImageTools():
                 shift,
                 method='fourier',
                 kwargs={}):
+        """Shift one image
+
+        Parameters
+        ----------
+        image
+        shift : ndarray of length 2
+            Shift to apply, in [dX,dY] order
+        method : str
+            'fourier' or 'spline'
+        kwargs : dict
+            additional kwargs to pass to the spline_shift function
+
+        Returns shifted image
+
+        """
         
         if method == 'fourier':
             return np.fft.ifftn(fourier_shift(np.fft.fftn(image), shift[::-1])).real
@@ -1019,6 +1233,21 @@ class ImageTools():
                  mask=None,
                  method='fourier',
                  kwargs={}):
+        """
+
+        Parameters
+        ----------
+        shift
+        image
+        ref_image
+        mask
+        method
+        kwargs
+
+        Returns
+        -------
+
+        """
         
         if mask is None:
             return (ref_image - shift[2] * self.imshift(image, shift[:2], method, kwargs)).ravel()
@@ -1030,5 +1259,18 @@ class ImageTools():
                     image,
                     method='fourier',
                     kwargs={}):
+        """
+
+        Parameters
+        ----------
+        shift
+        image
+        method
+        kwargs
+
+        Returns
+        -------
+
+        """
         
         return 1. / np.nanmax(self.imshift(image, shift, method, kwargs))

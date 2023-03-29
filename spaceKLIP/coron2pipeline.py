@@ -89,7 +89,20 @@ class Coron2Pipeline_spaceKLIP(Image2Pipeline):
 def run_obs(database,
             steps={},
             subdir='stage2'):
-    
+    """ Run all input files in a database through stage 2 processing
+
+    Parameters
+    ----------
+    database :
+    steps : dict
+        Nested dict of parameter overrides per step, in the standard JWST pipeline format.
+    subdir : str
+        output subdirectory
+
+    Returns None, but writes out files to subdir and updates the database
+
+    """
+
     # Set output directory.
     output_dir = os.path.join(database.output_dir, subdir)
     if not os.path.exists(output_dir):

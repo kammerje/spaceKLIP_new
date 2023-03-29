@@ -53,6 +53,9 @@ class Coron1Pipeline_spaceKLIP(Detector1Pipeline):
     
     def process(self,
                 input):
+        """Process input file in stage 1.
+
+        """
         
         # Open input as ramp model.
         input = RampModel(input)
@@ -111,6 +114,11 @@ class Coron1Pipeline_spaceKLIP(Detector1Pipeline):
                  input,
                  save_results=None,
                  **kwargs):
+        """ Run an individual step?
+
+        # FIXME ought to document why this wrapper function exists - what purpose does it have?
+
+        """
         
         # Check if results shall be saved.
         if step_obj.skip:
@@ -151,6 +159,11 @@ class Coron1Pipeline_spaceKLIP(Detector1Pipeline):
     def do_saturation(self,
                       input,
                       **kwargs):
+        """ Wrapper to run modified version of saturation step
+
+        # FIXME document the reasons for the added steps here
+
+        """
         
         # Save original step parameter.
         npix_grow = self.saturation.n_pix_grow_sat
@@ -256,6 +269,19 @@ class Coron1Pipeline_spaceKLIP(Detector1Pipeline):
 def run_obs(database,
             steps={},
             subdir='stage1'):
+    """ Run all input files in a database through stage 1 processing
+
+    Parameters
+    ----------
+    database :
+    steps : dict
+        Nested dict of parameter overrides per step, in the standard JWST pipeline format.
+    subdir : str
+        output subdirectory
+
+    Returns None, but writes out files to subdir and updates the database
+
+    """
     
     # Set output directory.
     output_dir = os.path.join(database.output_dir, subdir)

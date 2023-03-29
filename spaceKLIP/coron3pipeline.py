@@ -30,7 +30,10 @@ log.setLevel(logging.INFO)
 class Coron3Pipeline_spaceKLIP(Coron3Pipeline):
     """
     The spaceKLIP JWST stage 3 pipeline class.
+
+    For now, this is simply identical to the regular Coron3Pipeline !
     """
+
 
 
 def run_obs(database,
@@ -82,6 +85,18 @@ def run_obs(database,
 def make_asn_file(database,
                   output_dir,
                   key):
+    """ Make an association file, for use with stage 3 pipeline processing.
+
+    Parameters
+    ----------
+    database
+    output_dir
+    key
+
+    Returns
+    -------
+
+    """
     
     # Find science and reference files.
     ww_sci = np.where(database.obs[key]['TYPE'] == 'SCI')[0]
