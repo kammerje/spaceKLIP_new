@@ -4,5 +4,7 @@ jdaviz
 jwst
 matplotlib
 numpy
+pyklip
 scipy
 webbpsf
+webbpsf_ext
